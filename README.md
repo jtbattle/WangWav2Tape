@@ -6,10 +6,10 @@ some Wang 2200 and Wang 3300 cassette tapes, as I no longer have a native
 machine that can read them.
 
 The main site for things related to the Wang 2200 family of computers is
-[Wang2200.org](http://www.wang2200.org)
+[wang2200.org](http://www.wang2200.org)
 
 The main site for things related to the Wang 2200 family of computers is
-[Wang3300.org](http://www.wang3300.org)
+[wang3300.org](http://www.wang3300.org)
 
 
 Advice on Capturing Tapes
@@ -26,27 +26,28 @@ Normal audio cassettes have two pairs of tracks, set out like this:
                        --------------------------
 ```
 
-The read/write heads are positioned slightly offset on the track such
+The read/write heads are positioned offset on one side of the tape such
 that a matching pair of left and right tracks are picked up.  When the
-tape is flipped over, that offset is right to pick up those tracks.
+tape is flipped over, that offset is right to pick up the tracks going
+in the opposite direction.
 
 Unfortunately, the Wang 3300 and Wang 2200 wrote a single pair of tracks,
 somewhat between the others.
 
 ```
                        --------------------------
-
+                       >>>>>>>>>> left >>>>>>>>>>
   r/w head 0 --->      >>>>>>>>>> left >>>>>>>>>>
 
   r/w head 1 --->      >>>>>>>>>> right >>>>>>>>>
-
+                       <<<<<<<<<< right <<<<<<<<<
                        --------------------------
 ```
 
-"My" solution (idea borrowed from Steve Witham) was to get a cheap 4
-track multitrack cassette deck, the kind starving musicians use to
-record demo tracks.  These decks have four r/w heads, and the tape
-is only used in a single direction:
+The solution (worked out by Steve Witham) was to get a cheap four-track
+multitrack cassette deck, the kind starving musicians use to record
+demo tracks.  These decks have four r/w heads, and the tape is only used
+in a single direction:
 
 ```
                        --------------------------
@@ -59,30 +60,46 @@ is only used in a single direction:
 
 By mixing tracks 1 and 2 together to the "left" output of the unit, and
 mixing tracks 3 and 4 together to the "right" output, we can read the
-original wang track that was between those pairs.
+original Wang track that was between those pairs.  Sometimes, based on
+head/track alignment, it is better to just use tracks 1 and 3, or 2 and 4,
+or 1 and 4, etc.  Always review the captured waveforms to make sure they
+look clean and strong, and if they aren't, this may be one way to improve it.
 
-If the deck has a doing Dolby noise reduction setting, disable it.
-Try playing the tape a bit and set the recording levels so you have
-a strong signal with no clipping.
+If the deck has a doing Dolby noise reduction setting, disable it, as
+precompensation wasn't used when Wang recorded the data to the tape.
 
-The output of the multitrack recorder is sent to a PC audio application
-to capture the waves.  In my case, I used the excellent open source
-application, Audacity.  I've had success at 44.1 KHz and at 22050 Hz, 16b.
-When I save the final .wav to a disk, I save it at 44.1 KHz,
-16b uncompressed PCM format.  44.1 KHz is overkill as the signal is quite
-bandlimited.
+A very important step is to clean the tape head frequently.  I do it before
+every single tape I capture.  Invariably, these tapes are quite old, and
+they can suffer from
+[sticky-shed syndrome](https://en.wikipedia.org/wiki/Sticky-shed_syndrome).
+What that means is that bits of the oxide and binder can come off the tape
+surface and accumulate on the read head.  One sure sign you have this problem
+is if the tape starts making a loud squealing sound on playback -- not the
+audio, but the tape mechanically is squealing as it slides past the read
+head.  Use a Q-Tip dipped in isopropyl alcohol, rub the tape head to scrub
+off/dissolve any gunk, then use the dry end of the Q-Tip to wipe off any
+excess alcohol.  Blow on it a bit to ensure it is all evaporated, rewind
+the tape a bit, and capture some more.
 
-Preprocessing the Captured Wav
-------------------------------
+Before capturing, play the tape a bit and set the recording levels so you
+have a strong a strong signal with no clipping. Then rewind, and capture
+the audio.
 
-Unfortunately for our purposes, audio cassette decks perform games with
-the signals in order to reduce tape hiss.  Certain frequencies are boosted
-on recording, and then to compensate those same frequencies are cut on
-playback.
+The output of the multi-track recorder is sent to a PC audio application
+to capture the resulting stereo waves.  In my case, I used the excellent open
+source application, Audacity.  I've had success capturing at 44.1 KHz and at
+22050 Hz.  44.1 KHz is overkill as the signal is quite band-limited.
+Capture the audio at 16b resolution.
 
-First, I take the captured wave and save it to "raw.wav", just in case
-I mess up subsequent filtering steps, or I want to experiment with different
-filtering.
+When saving the final .wav to a disk, save it at whatever rate it was
+captured at, 16-bit, uncompressed PCM format.
+
+Preprocessing the Captured Waveform
+-----------------------------------
+
+First, take the captured wave and save it to "raw.wav", just in case you
+mess up the subsequent filtering steps, or want to experiment with different
+preprocessing steps.
 
 Next, apply a high pass filter, with these parameters:
 
@@ -151,8 +168,8 @@ This number won't just increment from 1 to N.  That is, it isn't the
 logical block number on the tape, but the detected block number on
 the actual recording.
 
-You see, both the 2200 and the 3300 record each data block twice in
-a row for redundancy, to guard against tape errors.  If a problem
+Both the 2200 and the 3300 record each data block twice in a row
+for redundancy, to guard against tape errors.  If a problem
 occurs in decoding, take that raw block number and look for that
 same block number in "log.txt".  There you can find some more detailed
 information about the decoding process.
@@ -238,13 +255,15 @@ Credits
 ----------
 
 This code was written by Jim Battle,
-[Wang2200.org](http://www.wang2200.org)
+[wang2200.org](http://www.wang2200.org)
 web master.
 
-However, I owe Steve Witham a lot of credit for leading the way with
-his own approach to decoding, and for coming up with the idea of using
-a multitrack tape deck to get to the data tracks.  He was also a great
-sounding board while I developed this code.  Thanks, Steve.
+However, I owe
+[Steve Witham](http://www.tiac.net/~sw/)
+a lot of credit for leading the way with his own approach to decoding, and for
+coming up with the idea of using a multitrack tape deck to get to the data
+tracks.  He was also a great sounding board while I developed this code.
+Thanks, Steve.
 
 License
 ----------
