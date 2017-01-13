@@ -44,10 +44,11 @@ somewhat between the others.
                        --------------------------
 ```
 
-The solution (worked out by Steve Witham) was to get a cheap four-track
-multitrack cassette deck, the kind starving musicians use to record
-demo tracks.  These decks have four r/w heads, and the tape is only used
-in a single direction:
+The solution (worked out by
+[Steve Witham](http://www.tiac.net/~sw/)
+) was to get a cheap four-track multitrack cassette deck, the kind starving
+musicians use to record demo tracks.  These decks have four r/w heads, and the
+tape is only used in a single direction:
 
 ```
                        --------------------------
@@ -267,7 +268,4 @@ Thanks, Steve.
 
 License
 ----------
-Historically the source code has not had any explicit license,
-but it has always been my intent that the code should be maximally
-open.  To that end, henceforth all Wangemu code is released under the
-MIT License.
+This code is released under the MIT License.
