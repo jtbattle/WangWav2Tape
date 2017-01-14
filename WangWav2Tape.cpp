@@ -115,6 +115,7 @@
 #include <iomanip>
 #include <fstream>
 #include <cmath>        // sqrt() requires this
+#include <algorithm>    // std::max()
 #include <assert.h>
 
 using std::string;
@@ -134,18 +135,15 @@ using std::setw;
 // ========================================================================
 // type definitions
 
-typedef unsigned long  uint32;
-typedef unsigned short uint16;
-typedef unsigned char  uint8;
-
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#define ABS(a)   (((a)<(0))?(-a):(a))
+#include <cstdint>
+typedef uint32_t uint32;
+typedef uint16_t uint16;
+typedef uint8_t  uint8;
 
 // pack two and four byte items in little endian fashion
 #define PACK2(a, b) (((uint8)a <<  0) + ((uint8)b <<  8))
 #define PACK4(a, b, c, d) \
     (((uint8)a <<  0) + ((uint8)b <<  8) + ((uint8)c << 16) + ((uint8)d << 24))
-
 
 // ========================================================================
 // global variables
@@ -197,17 +195,17 @@ public:
 
     // number of samples in file, as declared by header
     // (which can be wrong -- perhaps the file is truncated)
-    long ExpectedFrames() const;
+    int ExpectedFrames() const;
     // calculated actual sample count
-    long NumFrames() const;
+    int NumFrames() const;
 
     // random access interface:
     // return the sample pair at specified sample offset
-    samplePair_t Sample(long offset);
+    samplePair_t Sample(int offset);
 
     // sequential access interface:
     // return the sample pair at specified sample offset
-    void SetOffset(long off);
+    void SetOffset(int off);
     samplePair_t NextFrame();
 
 private:
@@ -224,14 +222,14 @@ private:
     ifstream m_istream;
 
     // cache attributes read in from the file header
-    int  m_num_channels;
-    int  m_bytes_per_sample;
-    int  m_bytes_per_frame;     // == #channels * (bytes/channel)
-    int  m_sample_rate;
-    long m_expected_frames;
-    long m_actual_frames;
-    long m_data_start;
-    long m_data_end;
+    int m_num_channels;
+    int m_bytes_per_sample;
+    int m_bytes_per_frame;     // == #channels * (bytes/channel)
+    int m_sample_rate;
+    int m_expected_frames;
+    int m_actual_frames;
+    int m_data_start;
+    int m_data_end;
 
     // we keep a direct cache of N sample buffers, each holding K samples.
     const static int N_buffers_log2 = 4;
@@ -240,10 +238,10 @@ private:
     const static int K_samples = (1 << K_samples_log2);
     samplePair_t m_cache[N_buffers][K_samples];
     bool m_cache_valid[N_buffers];
-    long m_cache_tag[N_buffers];
+    int  m_cache_tag[N_buffers];
 
     // sequential sample interface
-    long m_seq_offset;
+    int m_seq_offset;
 };
 
 
@@ -446,14 +444,14 @@ ReadWav::SampleFrequency() const
 }
 
 
-long
+int
 ReadWav::ExpectedFrames() const
 {
     return m_expected_frames;
 }
 
 
-long
+int
 ReadWav::NumFrames() const
 {
     return m_actual_frames;
@@ -461,22 +459,22 @@ ReadWav::NumFrames() const
 
 
 samplePair_t
-ReadWav::Sample(long offset)
+ReadWav::Sample(int offset)
 {
     // |<--- buf_tag --->|<--- buf --->|<--- buf_offset --->|
-    const long clamped_offset = MAX(0, offset);
+    const int clamped_offset = std::max(0, offset);
     const int buf_offset = (clamped_offset & (K_samples - 1));
     const int blk_offset = (clamped_offset >> K_samples_log2);
     const int buf        = blk_offset & (N_buffers - 1);
-    const long buf_tag = (clamped_offset >> (N_buffers_log2 + K_samples_log2));
+    const int buf_tag    = (clamped_offset >> (N_buffers_log2 + K_samples_log2));
 
     if (!m_cache_valid[buf] || (m_cache_tag[buf] != buf_tag)) {
 
         // cache miss
         m_cache_valid[buf] = true;
         m_cache_tag[buf]   = buf_tag;
-        long block_first   = m_data_start + (K_samples*m_bytes_per_frame)*blk_offset;
-        long block_last    = block_first  + (K_samples*m_bytes_per_frame) - 1;
+        int block_first    = m_data_start + (K_samples*m_bytes_per_frame)*blk_offset;
+        int block_last     = block_first  + (K_samples*m_bytes_per_frame) - 1;
 
 #if 0
         cout << "Cache miss: buf #" << hex << buf <<
@@ -563,7 +561,7 @@ ReadWav::Sample(long offset)
 
 
 void
-ReadWav::SetOffset(long off)
+ReadWav::SetOffset(int off)
 {
     assert(off >= 0);
     m_seq_offset = off;
@@ -586,8 +584,8 @@ struct peak_t {
     int   channel;      // 0=left, 1=right
     float maxima_orig;  // value at peak, including sign
     float maxima;       // value at peak, absolute value
-    long  sample_orig;  // sample where local maxima ocurred in wav file
-    long  sample;       // local maxima location after time shift
+    int   sample_orig;  // sample where local maxima ocurred in wav file
+    int   sample;       // local maxima location after time shift
 };
 
 typedef vector<peak_t> peakvec_t;
@@ -612,8 +610,8 @@ private:
     const float  m_min_peak;    // peaks must be at least this tall
 
     float m_window[3];          // window of three most recent values
-    long  m_samples;            // number of samples received
-    static long m_prev_sample;  // shared by both channels
+    int   m_samples;            // number of samples received
+    static int m_prev_sample;   // shared by both channels
 
     peakvec_t peaks;            // list of detected peaks
 
@@ -622,7 +620,7 @@ private:
 
 
 // static member needs explicit initialization
-long PeakDet::m_prev_sample = 0;
+int PeakDet::m_prev_sample = 0;
 
 PeakDet::PeakDet(ReadWav &wavobj, int channel, float min_thold) :
     m_wavobj(wavobj),
@@ -648,7 +646,7 @@ PeakDet::Stuff(float v)
     // roll window
     m_window[0] = m_window[1];
     m_window[1] = m_window[2];
-    m_window[2] = ABS(v);
+    m_window[2] = std::abs(v);
     m_samples++;
 
     // can't do anything until the window is filled
@@ -676,7 +674,7 @@ PeakDet::Stuff(float v)
     int earlier = 0;
     for (int offset = -off_delta; offset <= off_delta; offset++) {
         float s = m_wavobj.Sample(this_sample + offset).channel[m_channel];
-        s = ABS(s);
+        s = std::abs(s);
         if (m_window[1] < s) {
             if (opt_v >= 4) {
                 cout << "    rejecting fake peak " << m_window[1] <<
@@ -710,7 +708,7 @@ PeakDet::Stuff(float v)
     bool higherR = false;
     for (int offset = -off_delt; offset <= off_delt; offset++) {
         float s = m_wavobj.Sample(this_sample + offset).channel[m_channel];
-        s = ABS(s);
+        s = std::abs(s);
         if (interesting) {
             cout << "    @(" << this_sample << " + " << offset << "), v=" << s;
 	}
@@ -791,7 +789,7 @@ public:
     float StdDev() const;       // get standard deviation
     int SeqLength() const;      // return # of samples in sequence
 private:
-    long  count;        // number of items
+    int    count;       // number of items
     double sum;         // sum of all input values
     double sqsum;       // sum of (each input value squared)
 
@@ -1761,8 +1759,8 @@ main(int argc, char **argv)
         cout << "Scanning wav file..." << endl;
     }
 
-    const long len = wavobj.NumFrames();
-    for (long c=0; c<len; c++) {
+    const int len = wavobj.NumFrames();
+    for (int c=0; c<len; c++) {
         samplePair_t s = wavobj.NextFrame();
         //cout << dec << "Sample " << c << ": L=" << fixed << s.channel[0] << endl;
         //cout << dec << "Sample " << c << ": R=" << fixed << s.channel[1] << endl;
