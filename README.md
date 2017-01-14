@@ -151,7 +151,7 @@ This says:
 
 Certain important errors are logged to stderr.
 
-After it finishes (about 10 seconds for a 140 MB input file), open the
+After it finishes (about 5 seconds for a 140 MB input file), open the
 output.hex and log.txt files in an editor.  Before each block of the
 output.hex file, there is a small comment header indicating if that block
 decoded correctly or not.  In "vi", one can use this command to print
