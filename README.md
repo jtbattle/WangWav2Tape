@@ -8,7 +8,7 @@ machine that can read them.
 The main site for things related to the Wang 2200 family of computers is
 [wang2200.org](http://www.wang2200.org)
 
-The main site for things related to the Wang 2200 family of computers is
+The main site for things related to the Wang 3300 family of computers is
 [wang3300.org](http://www.wang3300.org)
 
 
@@ -40,15 +40,15 @@ somewhat between the others.
   r/w head 0 --->      >>>>>>>>>> left >>>>>>>>>>
 
   r/w head 1 --->      >>>>>>>>>> right >>>>>>>>>
-                       <<<<<<<<<< right <<<<<<<<<
+                       >>>>>>>>>> right >>>>>>>>>
                        --------------------------
 ```
 
 The solution (worked out by
-[Steve Witham](http://www.tiac.net/~sw/)
-) was to get a cheap four-track multitrack cassette deck, the kind starving
-musicians use to record demo tracks.  These decks have four r/w heads, and the
-tape is only used in a single direction:
+[Steve Witham](http://www.tiac.net/~sw/))
+was to get a cheap four-track multi-track cassette deck, the kind starving
+musicians use to record demo tracks.  These decks have four r/w heads, and
+the tape is only used in a single direction:
 
 ```
                        --------------------------
@@ -64,10 +64,14 @@ mixing tracks 3 and 4 together to the "right" output, we can read the
 original Wang track that was between those pairs.  Sometimes, based on
 head/track alignment, it is better to just use tracks 1 and 3, or 2 and 4,
 or 1 and 4, etc.  Always review the captured waveforms to make sure they
-look clean and strong, and if they aren't, this may be one way to improve it.
+look clean and strong and the two tracks are roughly equal amplitude.
+If they aren't, adjusting the track mix may improve it.
 
 If the deck has a doing Dolby noise reduction setting, disable it, as
 precompensation wasn't used when Wang recorded the data to the tape.
+Before capturing, play the tape a bit and set the recording levels so you
+have a strong a strong signal with no clipping. Then rewind, and capture
+the audio.
 
 A very important step is to clean the tape head frequently.  I do it before
 every single tape I capture.  Invariably, these tapes are quite old, and
@@ -81,10 +85,6 @@ head.  Use a Q-Tip dipped in isopropyl alcohol, rub the tape head to scrub
 off/dissolve any gunk, then use the dry end of the Q-Tip to wipe off any
 excess alcohol.  Blow on it a bit to ensure it is all evaporated, rewind
 the tape a bit, and capture some more.
-
-Before capturing, play the tape a bit and set the recording levels so you
-have a strong a strong signal with no clipping. Then rewind, and capture
-the audio.
 
 The output of the multi-track recorder is sent to a PC audio application
 to capture the resulting stereo waves.  In my case, I used the excellent open
@@ -262,7 +262,7 @@ web master.
 However, I owe
 [Steve Witham](http://www.tiac.net/~sw/)
 a lot of credit for leading the way with his own approach to decoding, and for
-coming up with the idea of using a multitrack tape deck to get to the data
+coming up with the idea of using a multi-track tape deck to get to the data
 tracks.  He was also a great sounding board while I developed this code.
 Thanks, Steve.
 

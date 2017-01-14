@@ -1,4 +1,4 @@
-// Prerelease version, 1/24/08
+// Prerelease version, 1/13/16
 // Author: Jim Battle
 
 // This program reads a .wav file containing sampled data from a Wang 3300 or
@@ -117,7 +117,6 @@
 #include <cmath>        // sqrt() requires this
 #include <assert.h>
 
-// I don't want to suck in all of namespace std, although the result is verbose
 using std::string;
 using std::vector;
 using std::ifstream;
@@ -138,7 +137,6 @@ using std::setw;
 typedef unsigned long  uint32;
 typedef unsigned short uint16;
 typedef unsigned char  uint8;
-typedef          char  int8;
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define ABS(a)   (((a)<(0))?(-a):(a))
@@ -315,7 +313,7 @@ ReadWav::ReadWav(string filename)
     m_filename = filename;
 
     // invalidate the cache
-    for(int i=0; i<N_buffers; i++)
+    for (int i=0; i<N_buffers; i++)
         m_cache_valid[i] = false;
 
     if (opt_v >= 1) {
@@ -369,11 +367,11 @@ ReadWav::ReadWav(string filename)
             uint16 blockAlign = read_raw_16b();
 
             uint16 sampbits = read_raw_16b();
-            if (sampbits == 8)
+            if (sampbits == 8) {
                 m_bytes_per_sample = 1;
-            else if (sampbits == 16)
+            } else if (sampbits == 16) {
                 m_bytes_per_sample = 2;
-            else {
+            } else {
                 cerr << "Error: samples must be either 8b or 16b" << endl;
                 exit(-1);
             }
@@ -494,7 +492,7 @@ ReadWav::Sample(long offset)
             cout << "Filling end with 0.0\n";
 #endif
             // none of the buffer exists
-            for(int i=0; i<K_samples; i++) {
+            for (int i=0; i<K_samples; i++) {
                 m_cache[buf][i].channel[0] =
                 m_cache[buf][i].channel[1] = 0.0f;
             }
@@ -514,14 +512,14 @@ ReadWav::Sample(long offset)
 
             if ((m_num_channels == 1) && (m_bytes_per_sample == 1)) {
                 // mono 8b
-                for(int n=0; n<K_samples; n++) {
+                for (int n=0; n<K_samples; n++) {
                     int s0 = (uint8)raw[n] - 128;
                     m_cache[buf][n].channel[0] =
                     m_cache[buf][n].channel[1] = s0 / 128.0f;
                 }
             } else if ((m_num_channels == 1) && (m_bytes_per_sample == 2)) {
                 // mono 16b
-                for(int n=0; n<K_samples; n++) {
+                for (int n=0; n<K_samples; n++) {
                     int s0 = ((uint8)raw[2*n+1] << 8) + (uint8)raw[2*n+0];
                     int ss0 = (s0 & 0x7FFF) - (s0 & 0x8000);
                     m_cache[buf][n].channel[0] =
@@ -529,7 +527,7 @@ ReadWav::Sample(long offset)
                 }
             } else if ((m_num_channels == 2) && (m_bytes_per_sample == 1)) {
                 // 8b stereo
-                for(int n=0; n<K_samples; n++) {
+                for (int n=0; n<K_samples; n++) {
                     int s0 = (uint8)raw[2*n+0] - 128;
                     int s1 = (uint8)raw[2*n+1] - 128;
                     m_cache[buf][n].channel[0] = s0 / 128.0f;
@@ -537,7 +535,7 @@ ReadWav::Sample(long offset)
                 }
             } else if ((m_num_channels == 2) && (m_bytes_per_sample == 2)) {
                 // 16b stereo
-                for(int n=0; n<K_samples; n++) {
+                for (int n=0; n<K_samples; n++) {
                     int s0 = ((uint8)raw[4*n+1] << 8) + (uint8)raw[4*n+0];
                     int ss0 = (s0 & 0x7FFF) - (s0 & 0x8000);
                     int s1 = ((uint8)raw[4*n+3] << 8) + (uint8)raw[4*n+2];
@@ -552,7 +550,7 @@ ReadWav::Sample(long offset)
 #if 0
                 cout << "Filling trailing end with 0.0\n";
 #endif
-                for(int n=m_data_end - block_first; n<K_samples; n++) {
+                for (int n=m_data_end - block_first; n<K_samples; n++) {
                     m_cache[buf][n].channel[0] =
                     m_cache[buf][n].channel[1] = 0.0f;
                 }
@@ -654,8 +652,9 @@ PeakDet::Stuff(float v)
     m_samples++;
 
     // can't do anything until the window is filled
-    if (m_samples < 2)
+    if (m_samples < 2) {
         return;
+    }
 
     bool interesting = false && (m_samples-2 >= 438614 && m_samples-2 <= 438614 && m_channel == 1);
     if (interesting) cout << "@" << m_samples-2 << ", v=" << m_window[1] << endl;
@@ -675,25 +674,28 @@ PeakDet::Stuff(float v)
     // search +/- 6/16ths of a bit period.
     int off_delta = (6*g_bit_per + 8) >> 4;
     int earlier = 0;
-    for(int offset = -off_delta; offset <= off_delta; offset++) {
+    for (int offset = -off_delta; offset <= off_delta; offset++) {
         float s = m_wavobj.Sample(this_sample + offset).channel[m_channel];
         s = ABS(s);
         if (m_window[1] < s) {
-            if (opt_v >= 4)
+            if (opt_v >= 4) {
                 cout << "    rejecting fake peak " << m_window[1] <<
                         " @" << this_sample << ", channel " << m_channel << endl;
+	    }
             return;
         } else {
             // if two points have the same value, ignore the later one
-            if ((offset < 0) && (m_window[1] == s))
+            if ((offset < 0) && (m_window[1] == s)) {
                 earlier = offset;
+	    }
         }
     }
     if (earlier) {
-        if (opt_v >= 4)
+        if (opt_v >= 4) {
             cout << "    rejecting redundant peak @" << this_sample <<
                     ", earlier @" << this_sample+earlier <<
                     ", channel " << m_channel << endl;
+        }
         return;
     }
 
@@ -706,23 +708,26 @@ PeakDet::Stuff(float v)
     int off_delt = (12*g_bit_per + 8) >> 4;
     bool higherL = false;
     bool higherR = false;
-    for(int offset = -off_delt; offset <= off_delt; offset++) {
+    for (int offset = -off_delt; offset <= off_delt; offset++) {
         float s = m_wavobj.Sample(this_sample + offset).channel[m_channel];
         s = ABS(s);
-        if (interesting)
+        if (interesting) {
             cout << "    @(" << this_sample << " + " << offset << "), v=" << s;
+	}
         // make sure we aren't just stuck in a flat spot
         higherL |= (offset < 0) &&
                    (m_window[1] > 1.12f*s) && (m_window[1] > s + 0.07f);
         higherR |= (offset > 0) &&
                    (m_window[1] > 1.08f*s) && (m_window[1] > s + 0.05f);
-        if (interesting)
+        if (interesting) {
             cout << " hl=" << higherL << ", hr=" << higherR << endl;
+	}
     }
     if (!higherL || !higherR) {
-        if (opt_v >= 4)
+        if (opt_v >= 4) {
             cout << "    rejecting flat peak " << m_window[1] <<
                     " @" << this_sample << ", channel " << m_channel << endl;
+	}
         return;
     }
 
@@ -737,9 +742,10 @@ PeakDet::Stuff(float v)
     if (!peaks.empty()) {
         bool prev_neg = (peaks.back().maxima_orig < 0.0f);
         bool curr_neg =            (p.maxima_orig < 0.0f);
-        if ((opt_v >= 3) && (prev_neg == curr_neg))
+        if ((opt_v >= 3) && (prev_neg == curr_neg)) {
             cout << "Adjacent peaks with like signs, channel " << m_channel <<
                     ", @" << peaks.back().sample << " and " << p.sample << endl;
+	}
     }
 
     // we have a new peak to add
@@ -832,8 +838,9 @@ Stat::Input(float v)
 float
 Stat::Mean() const
 {
-    if (count == 0)
+    if (count == 0) {
         return 0;
+    }
     return float(sum / count);
 }
 
@@ -841,8 +848,9 @@ Stat::Mean() const
 float
 Stat::StdDev() const
 {
-    if (count == 0)
+    if (count == 0) {
         return 0;
+    }
 #if 0
     return sqrt( sqrt((sqsum - sum*sum/count) / count) );
 #else
@@ -870,25 +878,30 @@ Merge(peakvec_t &p0, peakvec_t &p1)
     peakvec_t::iterator ptr1(p1.begin());
     peakvec_t rslt;
 
-    if (opt_v >= 1)
+    if (opt_v >= 1) {
         cout << "Merging..." << endl;
+    }
 
     // merge until one list or the other has been fully scanned
     while ( (ptr0 < p0.end()) && (ptr1 < p1.end()) ) {
-        if (ptr0->sample <= ptr1->sample)
+        if (ptr0->sample <= ptr1->sample) {
             rslt.push_back(*ptr0++);
-        else
+        } else {
             rslt.push_back(*ptr1++);
+        }
     }
 
     // just push the remainder from the non-empty list
-    while (ptr0 < p0.end())
+    while (ptr0 < p0.end()) {
         rslt.push_back(*ptr0++);
-    while (ptr1 < p1.end())
+    }
+    while (ptr1 < p1.end()) {
         rslt.push_back(*ptr1++);
+    }
 
-    if (opt_v >= 1)
+    if (opt_v >= 1) {
         cout << "    merged list has " << rslt.size() << " edges" << endl;
+    }
 
     return rslt;
 }
@@ -906,20 +919,21 @@ enum { LL=0, LR=1, RL=2, RR=3 }; // transition classification
 void
 Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
 {
-    if (peaks.size() < 32)
+    if (peaks.size() < 32) {
         return;
+    }
 
     // run through the peaks, calculating the mean and standard deviation
     // of the amplitude of the peaks, and the L->L, L->R, R->L, and R->R
     // transition intervales.  It is possible that not all transitions
     // occur in a given block.
     Stat amp;
-    for(peakvec_t::iterator i=peaks.begin(); i < peaks.end(); i++) {
+    for (peakvec_t::iterator i=peaks.begin(); i < peaks.end(); i++) {
         amp.Input(i->maxima);
         if (i > peaks.begin()) {      // delta is relative to previous sample
             int xition = 2*((i-1)->channel) + (i->channel);
             int tdelta = i->sample - (i-1)->sample;
-            stats[xition].Input(tdelta);
+            stats[xition].Input(float(tdelta));
         }
     }
 
@@ -945,32 +959,34 @@ Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
     // an amount that will equalize the LR and RL difference,
     // and toss out peaks that are not tall enough.
     int tshift = int(stats[RL].Mean() - stats[LR].Mean() + 0.5f) >> 1;
-    if (opt_v >= 1)
+    if (opt_v >= 1) {
         cout << "    applying R channel shift of " << tshift << " samples" << endl;
+    }
 
     peakvec_t shifted;
-    for(peakvec_t::iterator i=peaks.begin(); i < peaks.end(); i++) {
+    for (peakvec_t::iterator i=peaks.begin(); i < peaks.end(); i++) {
         peak_t p = *i;
-        if (p.channel == 1)
+        if (p.channel == 1) {
             p.sample += tshift;
+	}
         shifted.push_back(p);
     }
 
     // rerun the stats on the updated block
     amp.Clear();
-    for(int i=0; i<4; i++)
+    for (int i=0; i<4; i++)
         stats[i].Clear();
 
-    for(peakvec_t::iterator i=shifted.begin(); i < shifted.end(); i++) {
+    for (peakvec_t::iterator i=shifted.begin(); i < shifted.end(); i++) {
         amp.Input(i->maxima);
         if (i > shifted.begin()) {      // delta is relative to previous sample
             int xition = 2*((i-1)->channel) + (i->channel);
             int tdelta = i->sample - (i-1)->sample;
-            stats[xition].Input(tdelta);
+            stats[xition].Input(float(tdelta));
         }
     }
 
-    for(int i=0; i<4; i++) {
+    for (int i=0; i<4; i++) {
         if ( (g_bit_per < stats[i].Mean() - g_devs_warn*stats[i].StdDev()) ||
              (g_bit_per > stats[i].Mean() + g_devs_warn*stats[i].StdDev()) ) {
             if (stats[i].SeqLength() > 4) // guard against inadequate stats
@@ -985,13 +1001,13 @@ Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
     // of the normal transition time and the following edge is.
 
     int lower[4], upper[4];
-    for(int i=0; i<4; i++) {
+    for (int i=0; i<4; i++) {
         lower[i] = int(stats[i].Mean() - g_devs_filter*stats[i].StdDev() + 0.5f);
         upper[i] = int(stats[i].Mean() + g_devs_filter*stats[i].StdDev() + 0.5f);
     }
 
     peakvec_t rslt;
-    for(peakvec_t::iterator i=shifted.begin(); i < shifted.end(); i++) {
+    for (peakvec_t::iterator i=shifted.begin(); i < shifted.end(); i++) {
         if (!rslt.empty()) {
             peak_t prev = rslt.back();
             int xition = 2*((i-1)->channel) + (i->channel);
@@ -1054,8 +1070,9 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
     uint8 byte;         // byte being assembled
     uint8 data[1024];   // blocks never get this big, but just in case...
 
-    if (opt_v >= 1)
+    if (opt_v >= 1) {
         cout << "Starting block decode at frame " << peaks.begin()->sample_orig << "\n";
+    }
 
     if (peaks.size() < 32) {
         cout << "    skipping: only " << dec << peaks.size() << " edges" << endl;
@@ -1070,12 +1087,12 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
 
     // set bounds for reasonable transition times
     int lower[4], upper[4];
-    for(int i=0; i<4; i++) {
+    for (int i=0; i<4; i++) {
         lower[i] = int(stats[i].Mean() - g_devs_warn*stats[i].StdDev() + 0.5f);
         upper[i] = int(stats[i].Mean() + g_devs_warn*stats[i].StdDev() + 0.5f);
     }
 
-    for(peakvec_t::iterator pk = peaks.begin(); pk < peaks.end(); pk++) {
+    for (peakvec_t::iterator pk = peaks.begin(); pk < peaks.end(); pk++) {
 
         bool funny_interval = false;
 
@@ -1108,18 +1125,21 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
         }
         // even if it might be too short or too long, we decode it anyway
 
-        if (opt_v >= 3)
+        if (opt_v >= 3) {
             cout << "    got bit " << ((pk->channel) ? 1 : 0) << "\n";
+	}
         byte = (byte << 1) | ((pk->channel) ? 1 : 0);
         if (++bit_cnt == 8) {
-            if (opt_v >= 2)
+            if (opt_v >= 2) {
                 cout << hex << setfill('0') <<
                         "    byte " << setw(3) << byte_cnt <<
                         "= 0x" << setw(2) << (int)byte << "\n";
-            if (byte_cnt < 1024)
+	    }
+            if (byte_cnt < 1024) {
                 data[byte_cnt] = byte;
-            else if ((byte_cnt == 768) && (opt_v >= 2))
+            } else if ((byte_cnt == 768) && (opt_v >= 2)) {
                 cout << "    Warning: run on block!\n";
+	    }
             byte_cnt++;
             byte = 0x00;
             bit_cnt = 0;
@@ -1133,7 +1153,7 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
             warnings++;
 //  cerr << "Detected funny peak @" << pk->sample_orig << endl;
             if (opt_v >= 3) {
-                for(int d=-3; d<3; d++) {
+                for (int d=-3; d<3; d++) {
                     if ( (pk+d-1 >= peaks.begin()) && (pk+d < peaks.end()) ) {
                         int ts0 = (pk+d  )->sample_orig;
                         int tsp = (pk+d-1)->sample_orig;
@@ -1141,10 +1161,11 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
                                 " delta " << ts0 - tsp <<
                                 " amplitude " << (pk+d)->maxima <<
                                 " channel "   << (pk+d)->channel;
-                        if (d == 0)
+                        if (d == 0) {
                             cout << "  <<<\n";
-                        else
+                        } else {
                             cout << "\n";
+                        }
                     }
                 }
             }
@@ -1153,8 +1174,9 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
     } // pk iterator
 
     if (bit_cnt != 0) {
-        if (opt_v >= 3)
+        if (opt_v >= 3) {
             cout << "    warning: " << bit_cnt << " residual bits" << endl;
+	}
     }
 
     // return data
@@ -1203,25 +1225,27 @@ DumpBlk(datablk_t &blk)
 
         // block check sum: sum of bytes 0, 2,3, 5..9, 10..10+length-1
         int computed_cksum = computed_ctl_cksum;
-        for(int i=10; i < 10+record_length; i++)
+        for (int i=10; i < 10+record_length; i++)
             computed_cksum += blk.data[i];
         computed_cksum &= 0xFF;
 
         cout << "# block type: " << hex << setfill('0') << setw(2) << (int)blk.data[0] << "\n";
 
         cout << "# block cksum: ";
-        if (cksum == computed_cksum)
+        if (cksum == computed_cksum) {
             cout << "OK\n";
-        else
+        } else {
             cout << "BAD!  0x" << hex << cksum << " expected, 0x" << computed_cksum << " seen\n";
+        }
 
         cout << "# record length = " << dec << record_length << " bytes\n";
 
         cout << "# control cksum: ";
-        if (ctl_cksum == computed_ctl_cksum)
+        if (ctl_cksum == computed_ctl_cksum) {
             cout << "OK\n";
-        else
+	} else {
             cout << "BAD!  0x" << hex << ctl_cksum << " expected, 0x" << computed_ctl_cksum << " seen\n";
+	}
 
         cout << "# file number   = " << dec << file_number << "\n";
         cout << "# record number = " << dec << record_number << "\n";
@@ -1241,7 +1265,7 @@ DumpBlk(datablk_t &blk)
     int end = blk.byte_count;   // one past end
     int cnt = 0;
 
-    for(int i=start; i<end; i++, cnt++) {
+    for (int i=start; i<end; i++, cnt++) {
 
         // print data byte
         cout << hex << setfill('0') << setw(2) << (int)blk.data[i];
@@ -1251,15 +1275,16 @@ DumpBlk(datablk_t &blk)
              (i == end-1) ) {    // end of block
             if (cnt%16 < 15) {
                 // pad to make sure ascii part lines up
-                for(int k=(cnt+1)%16 ; k<16; k++)
+                for (int k=(cnt+1)%16 ; k<16; k++)
                     cout << "  ";
             }
             cout << "  ";
-            for(int j=i-(cnt%16); j <= i; j++) {
-                if (blk.data[j] < 32 || blk.data[j] > 126)
+            for (int j=i-(cnt%16); j <= i; j++) {
+                if (blk.data[j] < 32 || blk.data[j] > 126) {
                     cout << '.';
-                else
+                } else {
                     cout << (char)blk.data[j];
+                }
             }
             cout << "\n";
         }
@@ -1274,13 +1299,14 @@ DumpBlk(datablk_t &blk)
 blockvec_t
 DecodeBytes(peakvec_t& peaks)
 {
-    if (opt_v >= 1)
+    if (opt_v >= 1) {
         cout << "Decoding..." << endl;
+    }
 
     blockvec_t rslt;    // assembled list of blocks
 
     int blk_num = 0;
-    for(peakvec_t::iterator pk = peaks.begin(); pk < peaks.end(); blk_num++) {
+    for (peakvec_t::iterator pk = peaks.begin(); pk < peaks.end(); blk_num++) {
 
         // list of peaks associated with one block
         peakvec_t blk_peaks;
@@ -1334,8 +1360,9 @@ EmitBlk3300(ofstream &os, blockvec_t::iterator blk, string msg="")
     os << setfill('0'); // we only use width() when hex is in play
 
     os << "## Raw tape block #" << dec << blk->number << "\n";
-    if (msg.length() > 0)
+    if (msg.length() > 0) {
         os << "#  " << msg << endl;
+    }
     if (!blk->ctl_cksum_ok || !blk->cksum_ok) {
         os << "#  Bad checksum -- the entire block is untrustworthy\n";
     }
@@ -1343,8 +1370,9 @@ EmitBlk3300(ofstream &os, blockvec_t::iterator blk, string msg="")
     os << "#  record number: " << blk->record_number << "\n";
     os << "#  record length: " << blk->record_length << "\n";
     os << "#  load address:  " << hex << setw(4) << blk->load_addr << "\n";
-    if (blk->warnings > 0 || blk->dribble_bits > 0)
+    if (blk->warnings > 0 || blk->dribble_bits > 0) {
         os << "#  data bytes:    " << dec << blk->byte_count - hdr_bytes << "\n";
+    }
 
     // emit in intel hex format, kind of
     bool hdr = false;                           // haven't emitted header
@@ -1352,7 +1380,7 @@ EmitBlk3300(ofstream &os, blockvec_t::iterator blk, string msg="")
     uint8 sum;
 
     os << hex;
-    for(int i=hdr_bytes; i< blk->byte_count; i++) {
+    for (int i=hdr_bytes; i< blk->byte_count; i++) {
         int a = blk->load_addr + i - hdr_bytes;
 
         if (!hdr) {
@@ -1402,7 +1430,7 @@ EmitTape3300(blockvec_t rawblocks)
     //     match, pick the one with the correct checksum.
     // (d) report the block containing more data
 
-    for(blockvec_t::iterator blk = rawblocks.begin(); blk < rawblocks.end(); ) {
+    for (blockvec_t::iterator blk = rawblocks.begin(); blk < rawblocks.end(); ) {
         blockvec_t::iterator nxt = blk+1;
 
         // case (a) -- single, unmatched block
@@ -1421,18 +1449,19 @@ EmitTape3300(blockvec_t rawblocks)
 
         // cases (b) and (c) -- headers match
         if (blk->ctl_cksum_ok && nxt->ctl_cksum_ok && hdr_match) {
-            if (blk->cksum_ok)
+            if (blk->cksum_ok) {
                 EmitBlk3300(os, blk);
-            else if (nxt->cksum_ok)
+            } else if (nxt->cksum_ok) {
                 EmitBlk3300(os, nxt);
-            else {
+            } else {
                 // both bad; report the one with more data
                 // it is arguable that the criterion should be # warnings,
                 // or # of dribble bits.
-                if (blk->record_length >= nxt->record_length)
+                if (blk->record_length >= nxt->record_length) {
                     EmitBlk3300(os, blk);
-                else
+                } else {
                     EmitBlk3300(os, nxt);
+                }
             }
             blk += 2;
             continue;
@@ -1444,7 +1473,7 @@ EmitTape3300(blockvec_t rawblocks)
         blk++;
         continue;
 
-    } // for(blk)
+    } // for (blk)
 
     os.close();
 }
@@ -1456,8 +1485,9 @@ EmitBlk2200(ofstream &os, blockvec_t::iterator blk, string msg="")
     os << setfill('0'); // we only use width() when hex is in play
 
     os << "## Raw tape block #" << dec << blk->number << "\n";
-    if (msg.length() > 0)
+    if (msg.length() > 0) {
         os << "#  " << msg << endl;
+    }
     if (blk->byte_count != 256 || blk->warnings != 0 || blk->dribble_bits != 0) {
         os << "#  Warning bad byte count, " <<
               blk->warnings << " warnings," <<
@@ -1468,10 +1498,11 @@ EmitBlk2200(ofstream &os, blockvec_t::iterator blk, string msg="")
     // emit in intel hex format, kind of
     int end = blk->byte_count;   // one past last byte
 
-    for(int i=0; i < blk->byte_count; i++) {
+    for (int i=0; i < blk->byte_count; i++) {
         os << hex << setw(2) << (int)blk->data[i];
-        if ((i%16 == 15) || (i == blk->byte_count-1))
+        if ((i%16 == 15) || (i == blk->byte_count-1)) {
             os << "\n";
+	}
     }
 
     os << endl; // emit a blank line and flush
@@ -1506,12 +1537,12 @@ EmitTape2200(blockvec_t rawblocks)
     //    (3) 2048 edges of the first copy of the data
     //    (4) ~20 bit gap
     //    (5) 2048 edges of the second copy of the data
-    //    (6) ~400 bit gap 
+    //    (6) ~400 bit gap
     // thus we can use the short burst block to help group pairs of blocks.
 
     bool burst = false; // indicates that previous block was a burst
 
-    for(blockvec_t::iterator blk = rawblocks.begin(); blk < rawblocks.end(); ) {
+    for (blockvec_t::iterator blk = rawblocks.begin(); blk < rawblocks.end(); ) {
         blockvec_t::iterator nxt = blk+1;
 
         // case (a) -- burst of 1's
@@ -1532,7 +1563,8 @@ EmitTape2200(blockvec_t rawblocks)
 
         bool blk_ok = (blk->byte_count == 256) && (blk->dribble_bits == 0);
         bool nxt_ok = (nxt->byte_count == 256) && (nxt->dribble_bits == 0);
-        bool data_match = memcmp( blk->data, nxt->data, 256 ) == 0;
+        bool data_match = blk_ok && nxt_ok
+                       && (memcmp( blk->data, nxt->data, 256 ) == 0);
 
         // (c) the first block matches the second block
         if (blk_ok && nxt_ok && data_match) {
@@ -1554,14 +1586,15 @@ EmitTape2200(blockvec_t rawblocks)
         // (d) if we are just after a burst, we have a pair,
         //     so pick the better one and skip both.
         if (burst) {
-            if (blk_ok)
+            if (blk_ok) {
                 EmitBlk2200(os, blk);
-            else if (nxt_ok)
+            } else if (nxt_ok) {
                 EmitBlk2200(os, nxt);
-            else if (blk->byte_count >= nxt->byte_count)
+            } else if (blk->byte_count >= nxt->byte_count) {
                 EmitBlk2200(os, blk);
-            else
+            } else {
                 EmitBlk2200(os, nxt);
+	    }
             blk += 2;
             burst = false;
             continue;
@@ -1573,7 +1606,7 @@ EmitTape2200(blockvec_t rawblocks)
         blk++;
         continue;
 
-    } // for(blk)
+    } // for (blk)
 
     os.close();
 }
@@ -1608,13 +1641,14 @@ ParseArgs(int argc, char **argv)
     opt_v   = 0;
     opt_ofn = "";
     opt_fmt = FMT_2200;
-    
+
 #if 1
-    if (argc < 2)       // we need at least one parameter
+    if (argc < 2) {     // we need at least one parameter
         usage(-1);
+    }
 #endif
 
-    for(int i=1; i<argc-1; i++) {
+    for (int i=1; i<argc-1; i++) {
 
         if (strcmp(argv[i], "-v") == 0) {
             // verbose reporting
@@ -1626,8 +1660,9 @@ ParseArgs(int argc, char **argv)
                     // if next arg wasn't a number, atol returns 0
                     // however, if the user did "-v 0", we mess up in this assumption
                     opt_v = 1;
-                } else
+                } else {
                     i++;        // skip numeric argument
+                }
             }
         }
 
@@ -1722,11 +1757,12 @@ main(int argc, char **argv)
     PeakDet peakDet0(wavobj, 0, opt_min_thold);
     PeakDet peakDet1(wavobj, 1, opt_min_thold);
 
-    if (opt_v >= 1)
+    if (opt_v >= 1) {
         cout << "Scanning wav file..." << endl;
+    }
 
     const long len = wavobj.NumFrames();
-    for(long c=0; c<len; c++) {
+    for (long c=0; c<len; c++) {
         samplePair_t s = wavobj.NextFrame();
         //cout << dec << "Sample " << c << ": L=" << fixed << s.channel[0] << endl;
         //cout << dec << "Sample " << c << ": R=" << fixed << s.channel[1] << endl;
@@ -1753,10 +1789,11 @@ main(int argc, char **argv)
     blockvec_t tape = DecodeBytes(merged);
 
     // generate final output
-    if (opt_fmt == FMT_3300)
+    if (opt_fmt == FMT_3300) {
         EmitTape3300(tape);
-    else
+    } else {
         EmitTape2200(tape);
+    }
 
     return 0;
 }
