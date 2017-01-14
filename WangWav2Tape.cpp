@@ -83,6 +83,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <memory>
 #include <cmath>        // sqrt() requires this
 #include <algorithm>    // std::max()
 #include <cassert>
@@ -583,13 +584,13 @@ private:
     const int    m_channel;     // 0=left, 1=right
     const float  m_min_peak;    // peaks must be at least this tall
 
-    float m_window[3];          // window of three most recent values
-    int   m_samples;            // number of samples received
-    static int m_prev_sample;   // shared by both channels
+    float        m_window[3];   // window of three most recent values
+    int          m_samples;     // number of samples received
+    static int   m_prev_sample; // shared by both channels
 
-    peakvec_t peaks;            // list of detected peaks
+    peakvec_t    m_peaks;       // list of detected peaks
 
-    ReadWav& m_wavobj;          // associated wav file
+    ReadWav     &m_wavobj;      // associated wav file
 };
 
 
@@ -715,17 +716,17 @@ PeakDet::Stuff(float v)
     p.maxima      = m_window[1];
 
     // sanity check: make sure the signs of peaks alternates
-    if (!peaks.empty()) {
-        bool prev_neg = (peaks.back().maxima_orig < 0.0f);
-        bool curr_neg =            (p.maxima_orig < 0.0f);
+    if (!m_peaks.empty()) {
+        bool prev_neg = (m_peaks.back().maxima_orig < 0.0f);
+        bool curr_neg =              (p.maxima_orig < 0.0f);
         if ((opt_v >= 3) && (prev_neg == curr_neg)) {
             cout << "Adjacent peaks with like signs, channel " << m_channel <<
-                    ", @" << peaks.back().sample << " and " << p.sample << "\n";
+                    ", @" << m_peaks.back().sample << " and " << p.sample << "\n";
 	}
     }
 
     // we have a new peak to add
-    peaks.push_back(p);
+    m_peaks.push_back(p);
 
     if (opt_v >= 3) {
         char name = (m_channel) ? 'R' : 'L';
@@ -749,7 +750,7 @@ PeakDet::Flush()
 peakvec_t&
 PeakDet::GetList()
 {
-    return peaks;
+    return m_peaks;
 }
 
 
@@ -850,8 +851,8 @@ Stat::SeqLength() const
 peakvec_t
 Merge(peakvec_t &p0, peakvec_t &p1)
 {
-    peakvec_t::iterator ptr0(p0.begin());
-    peakvec_t::iterator ptr1(p1.begin());
+    auto ptr0 = begin(p0);
+    auto ptr1 = begin(p1);
     peakvec_t rslt;
 
     if (opt_v >= 1) {
@@ -904,7 +905,7 @@ Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
     // transition intervales.  It is possible that not all transitions
     // occur in a given block.
     Stat amp;
-    for (peakvec_t::iterator i=peaks.begin(); i < peaks.end(); i++) {
+    for (auto i=begin(peaks); i < end(peaks); i++) {
         amp.Input(i->maxima);
         if (i > peaks.begin()) {      // delta is relative to previous sample
             int xition = 2*((i-1)->channel) + (i->channel);
@@ -940,7 +941,7 @@ Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
     }
 
     peakvec_t shifted;
-    for (peakvec_t::iterator i=peaks.begin(); i < peaks.end(); i++) {
+    for (auto i=begin(peaks); i < end(peaks); i++) {
         peak_t p = *i;
         if (p.channel == 1) {
             p.sample += tshift;
@@ -954,7 +955,7 @@ Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
         stats[i].Clear();
     }
 
-    for (peakvec_t::iterator i=shifted.begin(); i < shifted.end(); i++) {
+    for (auto i=begin(shifted); i < end(shifted); i++) {
         amp.Input(i->maxima);
         if (i > shifted.begin()) {      // delta is relative to previous sample
             int xition = 2*((i-1)->channel) + (i->channel);
@@ -984,7 +985,7 @@ Filter(const int blk_num, peakvec_t &peaks, Stat *stats)
     }
 
     peakvec_t rslt;
-    for (peakvec_t::iterator i=shifted.begin(); i < shifted.end(); i++) {
+    for (auto i=begin(shifted); i < end(shifted); i++) {
         if (!rslt.empty()) {
             peak_t prev = rslt.back();
             int xition = 2*((i-1)->channel) + (i->channel);
@@ -1098,7 +1099,7 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
         upper[i] = int(stats[i].Mean() + g_devs_warn*stats[i].StdDev() + 0.5f);
     }
 
-    for (peakvec_t::iterator pk = peaks.begin(); pk < peaks.end(); pk++) {
+    for (auto pk = begin(peaks); pk < end(peaks); pk++) {
 
         bool funny_interval = false;
 
@@ -1248,38 +1249,11 @@ DumpBlk(datablk_t &blk)
             blk.dribble_bits << " dribble bits, " <<
             blk.warnings << " warnings\n";
 
-#if 0
-    if (opt_fmt == FMT_2200) {
-	// before a start of file block pair, there is a burst of 66 0 bits;
-	// before other block pairs, there is a burst of 66 1 bits
-	if (blk.byte_count >=7 && blk.byte_count < 9) {
-	    bool all_0s = true;
-	    bool all_1s = true;
-	    for(int i=0; i < blk.byte_count; i++) {
-		all_0s &= (blk.data[i] == 0x00);
-		all_1s &= (blk.data[i] == 0xFF);
-	    }
-	    if (all_0s) {
-		cout << "# start of file block marker\n";
-	    } else if (all_1s) {
-		cout << "# continuation block marker\n";
-	    } else {
-		cout << "# Possibly malformed block marker:\n";
-		cout << "# ";
-		for(int i=0; i < blk.byte_count; i++) {
-		    cout << hex << setfill('0') << setw(2) << (int)blk.data[i];
-		}
-		cout << "\n";
-	    }
-	    return;
-	}
-    }
-#endif
-
     if (blk.byte_count == 0) {
 	// blips are just ignored
         return;
     }
+
     if ( blk.status != datablk_t::start_of_file_marker &&
          blk.status != datablk_t::continuation_marker &&
          blk.byte_count < 10) {
@@ -1410,7 +1384,7 @@ DecodeBytes(peakvec_t& peaks)
         }
 
         if (opt_v >= 1) {
-            peakvec_t::iterator eob = pk-1;
+            auto eob = pk-1;
             float t_ms = (eob->sample - sob->sample) / 44.1f;
             cout << "\nBlock #" << dec << blk_num <<
                     ": start @" << sob->sample <<
@@ -1461,7 +1435,7 @@ EmitBlk3300(ofstream &os, blockvec_t::iterator blk, string msg="")
     // emit in intel hex format, kind of
     bool hdr = false;                           // haven't emitted header
     int end = blk->load_addr + blk->byte_count; // one past last byte
-    uint8 sum;
+    uint8 sum = 0;
 
     os << hex;
     for (int i=hdr_bytes; i< blk->byte_count; i++) {
@@ -1514,11 +1488,11 @@ EmitTape3300(blockvec_t rawblocks)
     //     match, pick the one with the correct checksum.
     // (d) report the block containing more data
 
-    for (blockvec_t::iterator blk = rawblocks.begin(); blk < rawblocks.end(); ) {
-        blockvec_t::iterator nxt = blk+1;
+    for (auto blk = begin(rawblocks); blk < end(rawblocks); ) {
+        auto nxt = blk+1;
 
         // case (a) -- single, unmatched block
-        if (blk == rawblocks.end()-1) {
+        if (blk == end(rawblocks)-1) {
             string msg("Unmatched block");
             EmitBlk3300(os, blk, msg);
             blk++;
@@ -1741,15 +1715,15 @@ main(int argc, char **argv)
     ParseArgs(argc, argv);
 
     // establish an interface to the wav file
-    // FIXME: this allocates a 128KB object on the stack!
-    ReadWav wavobj(opt_ifn);
+    ReadWav *wavobj = new ReadWav(opt_ifn);
+    assert(wavobj != nullptr);
 
     // computed some dependent parameters
     // FIXME: allow command line override of g_bit_per
     switch (opt_fmt) {
         case FMT_3300:
             g_bit_per = (int)( 44           // measured as typical @ 44.1KHz
-                               * wavobj.SampleFrequency()
+                               * wavobj->SampleFrequency()
                                / 44100.0f
                                 + 0.5);     // rounding
             // the gap between blocks is pretty large ...
@@ -1760,7 +1734,7 @@ main(int argc, char **argv)
             break;
         case FMT_2200:
             g_bit_per = (int)( 30           // measured as typical @ 44.1KHz
-                               * wavobj.SampleFrequency()
+                               * wavobj->SampleFrequency()
                                / 44100.0f
                                 + 0.5);     // rounding
             // on the 2200, the gap between the redundant copies of
@@ -1775,16 +1749,16 @@ main(int argc, char **argv)
     }
 
     // scan the wav file and find all peaks
-    PeakDet peakDet0(wavobj, 0, opt_min_thold);
-    PeakDet peakDet1(wavobj, 1, opt_min_thold);
+    PeakDet peakDet0(*wavobj, 0, opt_min_thold);
+    PeakDet peakDet1(*wavobj, 1, opt_min_thold);
 
     if (opt_v >= 1) {
         cout << "Scanning wav file..." << endl;
     }
 
-    const int len = wavobj.NumFrames();
+    const int len = wavobj->NumFrames();
     for (int c=0; c<len; c++) {
-        samplePair_t s = wavobj.NextFrame();
+        samplePair_t s = wavobj->NextFrame();
         //cout << dec << "Sample " << c << ": L=" << fixed << s.channel[0] << "\n";
         //cout << dec << "Sample " << c << ": R=" << fixed << s.channel[1] << "\n";
         peakDet0.Stuff(s.channel[0]);
@@ -1815,6 +1789,9 @@ main(int argc, char **argv)
     } else {
         EmitTape2200(tape);
     }
+
+    delete wavobj;
+    wavobj = nullptr;
 
     return 0;
 }
