@@ -150,6 +150,8 @@ float g_devs_warn   = 3.5f;  // how many std devs before an interval is flagged
 // This code isn't very efficient, just simple.
 //
 // One glossary term, quoting Microsoft:
+//     Frame - A frame is like a sample, but in multichannel format -
+//             it is a snapshot of all the channels at a specific data point.
 
 struct samplePair_t {
     float channel[2];
