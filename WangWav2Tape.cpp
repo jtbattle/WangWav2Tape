@@ -1028,7 +1028,7 @@ struct datablk_t {
 
     // this field contains classification data for 2200 format tapes
     enum status_t { click,                   // just a few isolated transitions
-                    garbage,                 // 
+                    garbage,                 // small block of bytes
                     start_of_file_marker,    // 2200 burst of 64-ish 0's
                     continuation_marker,     // 2200 burst of 64-ish 1's
                     short_block,             // < 256 bytes
@@ -1145,7 +1145,7 @@ DecodeBlk(const int blk_num, peakvec_t& peaks, const Stat * const stats)
             if (byte_cnt < 1024) {
                 data[byte_cnt] = byte;
             } else if ((byte_cnt == 768) && (opt_v >= 2)) {
-                cout << "    Warning: run on block!\n";
+                cout << "    Warning: run-on block!\n";
 	    }
             byte_cnt++;
             byte = 0x00;
