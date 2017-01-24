@@ -48,6 +48,7 @@ verbose = False
 # pick the one most likely to be correct.
 #############################################################################
 
+
 def list_winner(blocks):
     listing = []
     if len(blocks) == 0:
@@ -57,6 +58,7 @@ def list_winner(blocks):
         listing.append("\n# absolute block %d" % blk_num)
     listing.extend(listOneBlock(block))
     return listing
+
 
 def pick_winner(blocks):
     # check for the best, and hopefully most frequent, case:
@@ -73,7 +75,7 @@ def pick_winner(blocks):
             return blk_num, block
 
     # just pick the longest one, I guess
-    long_len, long_idx = 0,0
+    long_len, long_idx = 0, 0
     idx = 0
     for (abs_idx, block) in blocks:
         if len(block) > long_len:
@@ -149,7 +151,7 @@ for i in range(len(blocklist)):
         blocks = []
         continue
 
-    blocks.append([ i, block ])
+    blocks.append([i, block])
 
 # there is no marker after the lsat
 listing.extend(list_winner(blocks))

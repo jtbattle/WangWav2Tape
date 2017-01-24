@@ -77,6 +77,14 @@
 //      it would be thinkable to parse the block contents to make sure it
 //      has valid structure.  while not perfect, it is better than nothing.
 //      BASIC and structured data files have a known format.
+//
+//   *) sometimes one channel has fading/distortion or is unusable.
+//      it would be possible to infer the contents of the opposite track
+//      by assuming that if the good track didn't transition, the bad track
+//      did.  there is some ambiguity since the bad track may have N
+//      transitions to start the block, so it would require manual fiddling,
+//      or perhaps automatically inserting 1 to N assumed transitions and
+//      then parse the block to see if it makes sense. (see previous idea)
 
 #include <string>
 #include <vector>
